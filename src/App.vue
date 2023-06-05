@@ -4,7 +4,7 @@
       Source network: {{ selectedChainName }}
     </div>
     <div style="margin-top:20px">
-      Destination network: {{ targetChainName }}
+      Destination network: {{ destinationChainName }}
     </div>
 
     <button style="margin:46px 0" @click="test">Swap</button>
@@ -28,7 +28,7 @@ import { createEVMSwapper, ExecuteArgs } from '@rarimo/swap'
 import { Token, newToken, NewTokenOpts } from '@rarimo/bridge'
 
 const selectedChainName = ChainNames.Goerli
-const targetChainName = ChainNames.Goerli
+const destinationChainName = ChainNames.Goerli
 
 const test = async () => {
 
