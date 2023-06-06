@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@distributedlab/tools": "^0.2.0-rc.16",
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@rarimo/bridge": "^2.0.0-rc.0",
     "@rarimo/nft-checkout": "2.0.0-rc.0",
