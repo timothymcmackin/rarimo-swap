@@ -23,8 +23,9 @@ import {
   createCheckoutOperation,
   EVMOperation,
   CheckoutOperationParams,
+  EstimatedPrice,
 } from '@rarimo/nft-checkout'
-import { createEVMSwapper, ExecuteArgs } from '@rarimo/swap'
+import { createEVMSwapper, createSwapper, ExecuteArgs } from '@rarimo/swap'
 import { Token, newToken, NewTokenOpts } from '@rarimo/bridge'
 
 const selectedChainName = ChainNames.Goerli
@@ -36,7 +37,7 @@ const test = async () => {
 
     // Initialize the wallet provider, swapper, and operation
     const provider = await createProvider(MetamaskProvider)
-    const swapper = createEVMSwapper(provider)
+    const swapper = createSwapper(createEVMSwapper, provider)
     const op = createCheckoutOperation(EVMOperation, provider)
     const chains = await op.supportedChains()
 
@@ -70,6 +71,10 @@ const test = async () => {
     }
     const destinationToken:Token = newToken(destinationTokenOpts)
 
+    const paymentTokens = await op.loadPaymentTokens(selectedChain)
+    const selectedToken = paymentTokens?.find(i => i.symbol === sourceToken.symbol)!
+    const estimatedPrice:EstimatedPrice = await op.estimatePrice(selectedToken)
+
     // The amount of the source token to swap
     const sourceAmount:Amount = Amount.fromRaw("0.01", 18)
 
@@ -77,8 +82,8 @@ const test = async () => {
       amountIn: sourceAmount,
       from: sourceToken,
       to: destinationToken,
-      path: "", // Don't know what this path is
-      amountOut: "", // Do I have to calculate this myself?
+      amountOut: estimatedPrice, // Do I have to calculate this myself?
+      path: estimatedPrice.path, // Don't know what this path is
     }
 
     // Run the swap
