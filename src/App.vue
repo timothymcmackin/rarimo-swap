@@ -43,11 +43,12 @@ const test = async () => {
     const chains = await op.supportedChains()
 
     const selectedChain = chains.find((i: BridgeChain) => i.name === ChainNames.Goerli)!
+    const destinationChain = chains.find((i: BridgeChain) => i.name === ChainNames.Goerli)!
 
     // Initialize the swap operation and set the amount of the source token to swap
     const opInitParams:CheckoutOperationParams = {
       chainIdFrom: selectedChain.id,
-      chainIdTo: selectedChain.id,
+      chainIdTo: destinationChain.id,
       price: Price.fromRaw("0.01", 18, "ETH"),
     }
     await op.init(opInitParams)
@@ -64,7 +65,7 @@ const test = async () => {
 
     // Destination token type
     const destinationTokenOpts: NewTokenOpts = {
-      chain: selectedChain,
+      chain: destinationChain,
       name: "Wrapped Ether",
       symbol: "WETH",
       address: provider.address!,
@@ -72,6 +73,7 @@ const test = async () => {
     }
     const destinationToken:Token = newToken(destinationTokenOpts)
 
+    // Not sure why I need this separate object for the target chain; why can't I use the existing object for the destination chain?
     const chainTo = swapper.chains.find(
       i => Number(i.id) === Number(opInitParams.chainIdTo),
     )
