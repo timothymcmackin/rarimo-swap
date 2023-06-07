@@ -38,6 +38,7 @@ const test = async () => {
     // Initialize the wallet provider, swapper, and operation
     const provider = await createProvider(MetamaskProvider)
     const swapper = createSwapper(createEVMSwapper, provider)
+    await swapper.init()
     const op = createCheckoutOperation(EVMOperation, provider)
     const chains = await op.supportedChains()
 
