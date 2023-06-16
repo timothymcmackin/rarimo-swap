@@ -23,8 +23,9 @@ import { createProvider, ProviderUserRejectedRequest } from '@rarimo/provider'
 import { MetamaskProvider } from '@rarimo/providers-evm'
 import { ethers } from "ethers"
 
+// Source and destination chains and tokens
 const sourceChainName = ChainNames.Goerli
-const destinationChainName = ChainNames.Goerli
+const destinationChainName = ChainNames.Sepolia
 
 const sourceTokenSymbol = "UNI"
 const destinationTokenSymbol = "ETH";
@@ -64,8 +65,8 @@ const sendSwapTransaction = async () => {
   // Initialize the transaction
   await op.init(swapParams)
 
-  // Due to a limitation in the SDK, include an empty bundle for the transaction to work
-  const nullBundle = ethers.utils.defaultAbiCoder.encode(
+  // Due to a limitation in the SDK, include an empty bundle for the transaction to work when the transactions are on the same chain.
+  const bundle = ethers.utils.defaultAbiCoder.encode(
     ["address[]", "uint256[]","bytes[]"],
     [
       [],
@@ -90,7 +91,8 @@ const sendSwapTransaction = async () => {
 
   // Run the transaction.
   // The `checkout()` method takes the parameters from the operation instance, gets approval from the user's wallet, and calls the Rarimo contract to handle the transaction.
-  await op.checkout(estimatedPrice, { bundle: nullBundle })
+  // Change the next line to await op.checkout(estimatedPrice, { bundle }) if the source and destination chains are the same:
+  await op.checkout(estimatedPrice)
     .then((txHash) => {
       console.log('Swap complete:', txHash)
     })
