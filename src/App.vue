@@ -64,7 +64,7 @@ const sendSwapTransaction = async () => {
   // Initialize the transaction
   await op.init(swapParams)
 
-  // Due to a limitation in the SDK, we have to send an empty bundle for the transaction to work
+  // Due to a limitation in the SDK, include an empty bundle for the transaction to work
   const nullBundle = ethers.utils.defaultAbiCoder.encode(
     ["address[]", "uint256[]","bytes[]"],
     [
@@ -74,12 +74,13 @@ const sendSwapTransaction = async () => {
     ],
   )
 
-  // Identify the tokens to exchange, in this case UNI
+  // Get the available tokens
   const tokens = await op.loadPaymentTokens(sourceChain!)
   if (tokens.length === 0) {
     console.log('No tokens in the wallet have a large enough balance to make the swap.')
   }
 
+  // Make sure that the wallet has enough of the source token
   const paymentToken = tokens.find(({ symbol }) => symbol === sourceTokenSymbol)
   if (!paymentToken) {
     console.log('You do not have enough', sourceTokenSymbol, 'to make the swap.')
@@ -87,7 +88,7 @@ const sendSwapTransaction = async () => {
 
   const estimatedPrice = await op.estimatePrice(paymentToken!)
 
-  // Run the transaction
+  // Run the transaction.
   // The `checkout()` method takes the parameters from the operation instance, gets approval from the user's wallet, and calls the Rarimo contract to handle the transaction.
   await op.checkout(estimatedPrice, { bundle: nullBundle })
     .then((txHash) => {
