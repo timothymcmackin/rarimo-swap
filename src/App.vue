@@ -19,14 +19,15 @@
 <script setup lang="ts">
 import { ChainNames } from '@rarimo/shared'
 import { CheckoutOperationParams, createCheckoutOperation, EVMOperation, Price, BridgeChain } from '@rarimo/nft-checkout'
-import { createProvider } from '@rarimo/provider'
+import { createProvider, ProviderUserRejectedRequest } from '@rarimo/provider'
 import { MetamaskProvider } from '@rarimo/providers-evm'
+import { ethers } from "ethers"
 
 const sourceChainName = ChainNames.Goerli
 const destinationChainName = ChainNames.Goerli
 
 const sourceTokenSymbol = "UNI"
-const destinationTokenSymbol = "WETH";
+const destinationTokenSymbol = "ETH";
 
 const sendSwapTransaction = async () => {
   // Connect to the Metamask wallet in the browser, using the MetamaskProvider interface to limit bundle size.
@@ -43,8 +44,6 @@ const sendSwapTransaction = async () => {
   const sourceChain: BridgeChain = chains.find(i => i.name === sourceChainName)!
   const destinationChain: BridgeChain = chains.find(i => i.name === destinationChainName)!
 
-  console.log('Swapping', sourceTokenSymbol, 'for', destinationTokenSymbol)
-
   // Configure the swap transaction
   const swapParams: CheckoutOperationParams = {
     // Source and destination chains
@@ -53,19 +52,49 @@ const sendSwapTransaction = async () => {
     // Address to send the swapped tokens to
     recipient: provider.address!.toString(),
     // Amount of tokens to receive
-    price: Price.fromRaw("0.1", 18, destinationTokenSymbol),
+    price: Price.fromRaw("0.00001", 18, destinationTokenSymbol),
   }
+
+  console.log('Swapping',
+    sourceTokenSymbol, 'on', sourceChainName,
+    'for', swapParams.price.toString(), destinationTokenSymbol,
+    'on', destinationChainName
+  )
 
   // Initialize the transaction
   await op.init(swapParams)
 
+  // Due to a limitation in the SDK, we have to send an empty bundle for the transaction to work
+  const nullBundle = ethers.utils.defaultAbiCoder.encode(
+    ["address[]", "uint256[]","bytes[]"],
+    [
+      [],
+      [],
+      [],
+    ],
+  )
+
   // Identify the tokens to exchange, in this case UNI
   const tokens = await op.loadPaymentTokens(sourceChain!)
+  if (tokens.length === 0) {
+    console.log('No tokens in the wallet have a large enough balance to make the swap.')
+  }
+
   const paymentToken = tokens.find(({ symbol }) => symbol === sourceTokenSymbol)
+  if (!paymentToken) {
+    console.log('You do not have enough', sourceTokenSymbol, 'to make the swap.')
+  }
+
   const estimatedPrice = await op.estimatePrice(paymentToken!)
 
   // Run the transaction
   // The `checkout()` method takes the parameters from the operation instance, gets approval from the user's wallet, and calls the Rarimo contract to handle the transaction.
-  const txHash = await op.checkout(estimatedPrice)
+  await op.checkout(estimatedPrice, { bundle: nullBundle })
+    .then((txHash) => {
+      console.log('Swap complete:', txHash)
+    })
+    .catch((e:ProviderUserRejectedRequest) => {
+      console.log('The user rejected the transaction.')
+    })
 }
 </script>
