@@ -25,10 +25,10 @@ import { ethers } from "ethers"
 
 // Source and destination chains and tokens
 const sourceChainName = ChainNames.Goerli
-const destinationChainName = ChainNames.Sepolia
+const destinationChainName = ChainNames.Fuji
 
 const sourceTokenSymbol = "UNI"
-const destinationTokenSymbol = "ETH";
+const destinationTokenSymbol = "AVAX";
 
 const sendSwapTransaction = async () => {
   // Connect to the Metamask wallet in the browser, using the MetamaskProvider interface to limit bundle size.
@@ -38,10 +38,10 @@ const sendSwapTransaction = async () => {
   const op = createCheckoutOperation(EVMOperation, provider)
 
   // Get the chains that are supported from that chain type.
-  const chains = await op.supportedChains()
+  const chains = await op.getSupportedChains()
 
   // Select the source and destination chains.
-  // This example uses the Goerli chain, but your application can ask the user which chain to use.
+  // This example uses the Fuji chain, but your application can ask the user which chain to use.
   const sourceChain: BridgeChain = chains.find(i => i.name === sourceChainName)!
   const destinationChain: BridgeChain = chains.find(i => i.name === destinationChainName)!
 
@@ -51,9 +51,10 @@ const sendSwapTransaction = async () => {
     chainIdFrom: sourceChain.id,
     chainIdTo: destinationChain.id,
     // Address to send the swapped tokens to
-    recipient: provider.address!.toString(),
+    recipient: provider.address,
     // Amount of tokens to receive
-    price: Price.fromRaw("0.00001", 18, destinationTokenSymbol),
+    price: Price.fromRaw("0.01", 18, destinationTokenSymbol),
+    isMultiplePayment: false, // Single payment token for a simple example
   }
 
   console.log('Swapping',
@@ -76,18 +77,21 @@ const sendSwapTransaction = async () => {
   )
 
   // Get the available tokens
-  const tokens = await op.loadPaymentTokens(sourceChain!)
+  const tokens = await op.getPaymentTokens()
   if (tokens.length === 0) {
     console.log('No tokens in the wallet have a large enough balance to make the swap.')
+    return
   }
 
   // Make sure that the wallet has enough of the source token
   const paymentToken = tokens.find(({ symbol }) => symbol === sourceTokenSymbol)
   if (!paymentToken) {
     console.log('You do not have enough', sourceTokenSymbol, 'to make the swap.')
+    return
   }
 
-  const estimatedPrice = await op.estimatePrice(paymentToken!)
+  // Get the estimated cost of the token swap, not the total cost to the user
+  const estimatedPrice = await op.estimatePrice([paymentToken])
 
   // Run the transaction.
   // The `checkout()` method takes the parameters from the operation instance, gets approval from the user's wallet, and calls the Rarimo contract to handle the transaction.
